@@ -1,0 +1,57 @@
+name: telnyx
+version: "1.0.0"
+description: >
+  Telnyx SMS & Voice toolkit. Send/receive SMS, forward calls,
+  relay messages for team members. Plug in TELNYX_API_KEY and go.
+author: W3JDev
+license: MIT
+category: communication
+
+entrypoint: skills/telnyx_skill.py
+
+env_required:
+  - TELNYX_API_KEY
+
+env_optional:
+  - TELNYX_FROM_NUMBER       # default sending number (e.g. +13079999692)
+  - TELNYX_PUBLIC_KEY        # for webhook signature verification
+  - TELEGRAM_BOT_TOKEN       # for SMS → Telegram notifications
+  - TELEGRAM_OWNER_CHAT_ID   # Telegram chat ID to receive SMS alerts
+  - TELEGRAM_RELAY_CHAT_ID   # Team member chat ID for SMS relay
+  - FORWARD_TO_NUMBER        # Default call forward destination (e.g. +601121113249)
+
+tools:
+  - name: send_sms
+    description: Send an SMS to any number via Telnyx
+    args:
+      to: string (E.164 phone number)
+      message: string
+      from_number: string (optional, defaults to TELNYX_FROM_NUMBER)
+
+  - name: list_sms
+    description: List recent SMS messages on the account
+    args:
+      limit: integer (optional, default 10)
+      direction: string (optional, "inbound" or "outbound")
+
+  - name: list_telnyx_numbers
+    description: List all Telnyx numbers on the account
+    args: {}
+
+  - name: forward_call
+    description: Configure call forwarding TeXML for a number
+    args:
+      from_number: string
+      to_number: string (E.164)
+      whisper: string (optional)
+
+webhook:
+  description: FastAPI webhook server for inbound SMS + call forwarding
+  entrypoint: webhook/server.py
+  port: 8080
+  routes:
+    - POST /webhook/sms       # Telnyx inbound SMS webhook
+    - POST /texml/forward     # TeXML call forwarding response
+    - POST /texml/voicemail   # TeXML voicemail fallback
+    - POST /relay/telegram-to-sms  # Team member Telegram → SMS relay
+    - GET  /health
